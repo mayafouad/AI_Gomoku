@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import simpledialog
 from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 import numpy as np
@@ -96,7 +97,7 @@ def start_game():
     global canvas, root, status_label
     canvas_size = CELL_SIZE * BOARD_SIZE
     root = tk.Tk()
-    root.title("Gomoku")
+    root.title("Gomoku (Human Vs AI) ")
 
     frame = tk.Frame(root)
     frame.pack()
@@ -112,18 +113,19 @@ def start_game():
     load_images()
     if mode == "HumanvsAI":
         canvas.bind("<Button-1>", click)
-    elif mode == "AIvsAI":
-        # Start AI vs AI game after window initialization
+    elif mode == "AIvsAI": 
         root.after(500, ai_turn)
     root.mainloop()
 
 def select_mode(selected_mode):
     global mode, human_name
     mode = selected_mode
-    if mode == "HumanvsAI":
-        name = simpledialog.askstring("Enter Name", "Enter your name:")
-        human_name = name if name else "Human"
-    start_window.destroy()
+    if mode == "HumanvsAI": 
+        root = tk.Tk()
+        root.withdraw()
+        dialog = CustomNameDialog(root, title="Enter Name")
+        name = dialog.result
+        human_name = name if name else "Human" 
     start_game()
 
 def check_winner(player, row, col):
@@ -259,18 +261,19 @@ def ai_move():
                     best_move = (r, c)
     return best_move
 
-# Mode selection window
-start_window = tk.Tk()
-start_window.title("Gomoku Mode Selection")
-start_window.geometry("300x200")
 
-label = tk.Label(start_window, text="Choose Game Mode:", font=("Arial", 14))
-label.pack(pady=20)
 
-btn1 = tk.Button(start_window, text="Human vs AI", command=lambda: select_mode("HumanvsAI"), width=20)
-btn1.pack(pady=10)
 
-btn2 = tk.Button(start_window, text="AI vs AI", command=lambda: select_mode("AIvsAI"), width=20)
-btn2.pack(pady=10)
 
-start_window.mainloop()
+class CustomNameDialog(simpledialog.Dialog):
+    def body(self, master):
+        self.configure(bg="#E6B88C")
+        self.geometry("400x200")  
+
+        tk.Label(master, text="Enter your name:", bg="#E6B88C", font=("Arial", 14)).pack(pady=20)
+        self.entry = tk.Entry(master, font=("Arial", 14), width=30)
+        self.entry.pack()
+        return self.entry  
+
+    def apply(self):
+        self.result = self.entry.get()
