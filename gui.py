@@ -4,11 +4,9 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 import math
-import csv
+import MinMax
+import AlphaBeta
 
-root = tk.Tk()
-canvas = tk.Canvas(root, width=600, height=600, bg='#E6B88C')
-canvas.pack()  
 
 stone_images = {} 
 
@@ -48,33 +46,16 @@ def PutInitialTiles():
         print(f"Error: {e}")
 
 
-def GetHumanMove(event):
-    global stone_images  
-    
-    col = math.ceil(event.x / 40)
-    row = math.ceil(event.y / 40) 
-    x = col * 40
-    y = row * 40
-    
-    print(f"Placing stone at grid position ({row}, {col})")
-    
-    try:
-        
-        clicked_img = Image.open(r"D:\AI-Gumko\AI-Gumko\black_gm.jpg")
-        clicked_resized = clicked_img.resize((36, 36))  
-        stone_key = f"{row}_{col}_b"  
-        stone_images[stone_key] = ImageTk.PhotoImage(clicked_resized)
-        
-        canvas.create_image(x + 5, y + 5, 
-                          anchor=tk.CENTER, image=stone_images[stone_key])
-    except Exception as e:
-        print(f"Error: {e}")
-canvas.bind("<Button-1>", GetHumanMove)
 
 
 def launch_game(mode) :
-    DrawGrid()
-    PutInitialTiles()
-    canvas.pack()
-    root.mainloop()
+    global root , canvas
+    if mode == "Human vs AI" :
+        MinMax.select_mode("HumanvsAI")
+    else :
+        root = tk.Tk()
+        root.title("Gomoku (Human Vs AI)")
+        canvas = tk.Canvas(root, width=600, height=600, bg='#E6B88C')
+        canvas.pack()  
+        AlphaBeta.Main()
 
