@@ -9,7 +9,6 @@ import csv
 root = tk.Tk()
 canvas = tk.Canvas(root, width=600, height=600, bg='#E6B88C')
 canvas.pack()  
-root.resizable(False, False)
 
 stone_images = {} 
 
@@ -23,29 +22,28 @@ def DrawGrid():
 def InitializeGrid(fileName):
     lis = []
     with open(fileName, 'r') as file:
-         reader = csv.reader(file, skipinitialspace=True)
-         for row in reader:
-            i = int(row[0])
-            j = int(row[1])
-            symbol = row[2]
-            lis.append((i, j, symbol))
+         for row in file:
+             lis.append(row)
     return lis
 
 def PutInitialTiles():
     global stone_images  
     try:
         initial_grid = InitializeGrid("initialGrid.txt")
-
-        for item in initial_grid:
-            if item[2] == 'b':
+        for y in range(15):
+          for x in range(15):
+            cell = initial_grid[y][x] 
+            image = None
+            if cell == 'b':
                 image = Image.open("black_gm.jpg")
-            else:
+            elif cell == 'w':
                 image = Image.open("white_gm.png")
-            resized_image = image.resize((36, 36))  
-            stone_key = f"{item[0]}_{item[1]}_{item[2]}"
-            stone_images[stone_key] = ImageTk.PhotoImage(resized_image)
-            canvas.create_image(item[0]*40 + 5, item[1]*40 + 5, 
-                              anchor=tk.CENTER, image=stone_images[stone_key])
+            if image:
+                resized_image = image.resize((36, 36))  
+                stone_key = f"{y}_{x}_{cell}"
+                stone_images[stone_key] = ImageTk.PhotoImage(resized_image)
+                canvas.create_image(x * 40 + 5, y * 40 + 5, anchor=tk.CENTER, image=stone_images[stone_key])
+
     except Exception as e:
         print(f"Error: {e}")
 
@@ -62,7 +60,7 @@ def GetHumanMove(event):
     
     try:
         
-        clicked_img = Image.open("C:\\Users\\lojay\\Downloads\\black_gm.jpg")
+        clicked_img = Image.open(r"D:\AI-Gumko\AI-Gumko\black_gm.jpg")
         clicked_resized = clicked_img.resize((36, 36))  
         stone_key = f"{row}_{col}_b"  
         stone_images[stone_key] = ImageTk.PhotoImage(clicked_resized)
@@ -74,9 +72,9 @@ def GetHumanMove(event):
 canvas.bind("<Button-1>", GetHumanMove)
 
 
+def launch_game(mode) :
+    DrawGrid()
+    PutInitialTiles()
+    canvas.pack()
+    root.mainloop()
 
-DrawGrid()
-PutInitialTiles()
-
-canvas.pack()
-root.mainloop()
