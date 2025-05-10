@@ -1,7 +1,7 @@
 import tkinter as tk
 import gui   
 
-def start_game(mode):
+def  game(mode):
     root.destroy()   
     gui.launch_game(mode)   
 
@@ -33,7 +33,7 @@ btn_style = {
     "bd": 0
 }
 
-tk.Button(frame, text="Human vs AI", command=lambda: start_game("Human vs AI"), **btn_style).pack(pady=20)
-tk.Button(frame, text="AI vs AI", command=lambda: start_game("AI vs AI"), **btn_style).pack(pady=10)
+tk.Button(frame, text="Human vs AI", command=lambda: game("Human vs AI"), **btn_style).pack(pady=20)
+tk.Button(frame, text="AI vs AI", command=lambda: game("AI vs AI"), **btn_style).pack(pady=10)
 
 root.mainloop()
