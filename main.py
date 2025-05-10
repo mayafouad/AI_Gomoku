@@ -198,9 +198,17 @@ def minimax(board, depth, is_maximizing):
     if depth == 0 or is_board_full():
         return evaluate_board()
 
-    # Check for a winning state immediately
-    for r in range(BOARD_SIZE):
-        for c in range(BOARD_SIZE):
+    # Check for a winning state immediately within a 6x6 grid around the last move
+    if last_move != (-1, -1):
+        start_row = max(0, last_move[0] - 3)
+        end_row = min(BOARD_SIZE, last_move[0] + 4)
+        start_col = max(0, last_move[1] - 3)
+        end_col = min(BOARD_SIZE, last_move[1] + 4)
+    else:
+        start_row, end_row, start_col, end_col = 0, BOARD_SIZE, 0, BOARD_SIZE
+
+    for r in range(start_row, end_row):
+        for c in range(start_col, end_col):
             if board[r][c] != EMPTY:
                 if check_winner(board[r][c], r, c):
                     if board[r][c] == AI:
@@ -210,16 +218,8 @@ def minimax(board, depth, is_maximizing):
 
     if is_maximizing:
         max_eval = -np.inf
-        if last_move != (-1, -1):
-            start_row = max(0, last_move[0] - 2)
-            end_row = min(BOARD_SIZE, last_move[0] + 3)
-            start_col = max(0, last_move[1] - 2)
-            end_col = min(BOARD_SIZE, last_move[1] + 3)
-        else:
-            start_row, end_row, start_col, end_col = 0, BOARD_SIZE, 0, BOARD_SIZE
-
-        for r in range(start_row, end_row):
-            for c in range(start_col, end_col):
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
                 if board[r][c] == EMPTY:
                     board[r][c] = AI
                     eval = minimax(board, depth - 1, False)
@@ -228,16 +228,8 @@ def minimax(board, depth, is_maximizing):
         return max_eval
     else:
         min_eval = np.inf
-        if last_move != (-1, -1):
-            start_row = max(0, last_move[0] - 2)
-            end_row = min(BOARD_SIZE, last_move[0] + 3)
-            start_col = max(0, last_move[1] - 2)
-            end_col = min(BOARD_SIZE, last_move[1] + 3)
-        else:
-            start_row, end_row, start_col, end_col = 0, BOARD_SIZE, 0, BOARD_SIZE
-
-        for r in range(start_row, end_row):
-            for c in range(start_col, end_col):
+        for r in range(BOARD_SIZE):
+            for c in range(BOARD_SIZE):
                 if board[r][c] == EMPTY:
                     board[r][c] = HUMAN
                     eval = minimax(board, depth - 1, True)
