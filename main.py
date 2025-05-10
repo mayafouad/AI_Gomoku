@@ -218,8 +218,8 @@ def minimax(board, depth, is_maximizing):
 
     if is_maximizing:
         max_eval = -np.inf
-        for r in range(BOARD_SIZE):
-            for c in range(BOARD_SIZE):
+        for r in range(start_row, end_row):
+            for c in range(start_col, end_col):
                 if board[r][c] == EMPTY:
                     board[r][c] = AI
                     eval = minimax(board, depth - 1, False)
@@ -228,8 +228,8 @@ def minimax(board, depth, is_maximizing):
         return max_eval
     else:
         min_eval = np.inf
-        for r in range(BOARD_SIZE):
-            for c in range(BOARD_SIZE):
+        for r in range(start_row, end_row):
+            for c in range(start_col, end_col):
                 if board[r][c] == EMPTY:
                     board[r][c] = HUMAN
                     eval = minimax(board, depth - 1, True)
