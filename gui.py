@@ -54,7 +54,7 @@ def launch_game(mode) :
         MinMax.select_mode("HumanvsAI")
     else :
         root = tk.Tk()
-        root.title("Gomoku (Human Vs AI)")
+        root.title("Gomoku (AI Vs AI)")
         canvas = tk.Canvas(root, width=600, height=600, bg='#E6B88C')
         canvas.pack()  
         AlphaBeta.Main()
