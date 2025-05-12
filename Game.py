@@ -71,6 +71,8 @@ def start_game(mode):
         firstPlayer , secondPlayer = AI1 , AI2
         current_player = AI1
         MIN ,MAX = AI1 , AI2 
+        status_label = tk.Label(frame, text="AI1 is Thinking", font=("Arial", 12))
+        status_label.pack(pady=5)
         root.after(500, ai_turn)
     root.mainloop()
 
@@ -135,8 +137,7 @@ def ai_turn():
         y = random.randint(0, BOARD_SIZE - 1)
         move = (x , y) 
     else :
-        move = ai_move()
-    print("first AI\n")
+        move = ai_move() 
     if move:
         r, c = move
         board[r][c] = current_player
@@ -150,7 +151,7 @@ def ai_turn():
              messagebox.showinfo("Game Over", f"{'AI' if current_player == AI else human_name} wins!")
             if mode == "HumanvsAI" :
                 canvas.unbind("<Button-1>")
-                status_label.config(text="Game Over")
+            status_label.config(text="Game Over")
             return
 
         if is_board_full():
@@ -161,7 +162,9 @@ def ai_turn():
         if mode == "HumanvsAI":
             status_label.config(text="Your turn!")
         else :
+           status_label.config(text="AI2 is thinking...")
            root.after(100 , ai2_turn)
+           
 
 
 
@@ -171,9 +174,7 @@ def is_board_full():
 def is_valid_move(board, row, col):
     return 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE and board[row][col] == EMPTY
 
-def evaluate_board():
-    
-    print("eval\n")
+def evaluate_board(): 
     weights = {1: 1, 2: 10, 3: 100, 4: 1000}
     score = 0
     directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
@@ -214,9 +215,7 @@ def evaluate_board():
                         score -= weights[chain_length]
     return score
 
-def minimax(board, depth, is_maximizing):
-    print("Hello MinMax :- \n" , depth)
-    
+def minimax(board, depth, is_maximizing): 
     
     if depth == 0 or is_board_full():
         return evaluate_board() 
@@ -258,8 +257,7 @@ def minimax(board, depth, is_maximizing):
                     min_eval = min(min_eval, eval)
         return min_eval
 
-def ai_move():
-    print("Hello \n")
+def ai_move(): 
     best_score = -np.inf
     best_move = None
     global last_move
@@ -280,8 +278,7 @@ def ai_move():
                 board[r][c] = EMPTY
                 if score > best_score:
                     best_score = score
-                    best_move = (r, c)
-    print("Best :- " , best_move)
+                    best_move = (r, c) 
     return best_move
 
 
@@ -448,7 +445,7 @@ def ai2_turn():
 
         if check_winner(current_player, r, c):
             messagebox.showinfo("Game Over", f"{'AI 1' if  current_player ==  AI1 else 'AI 2'} wins!") 
-            root.status_label.config(text="Game Over")
+            status_label.config(text="Game Over")
             return
 
         if is_board_full():
@@ -461,6 +458,7 @@ def ai2_turn():
         else :
              current_player =  firstPlayer
         if mode == "AIvsAI":
+            status_label.config(text="AI1 is thinking...")
             root.after(100 ,  ai_turn)
 
 
