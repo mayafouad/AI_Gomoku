@@ -165,22 +165,6 @@ def ai_turn():
            root.after(100 , ai2_turn)
 
 
-def check_winner(player, row, col):
-    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
-    for dr, dc in directions:
-        count = 1
-        for direction in [1, -1]:
-            r, c = row, col
-            while True:
-                r += dr * direction
-                c += dc * direction
-                if 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and board[r][c] == player:
-                    count += 1
-                else:
-                    break
-        if count >= 5:
-            return True
-    return False
 
 def is_board_full():
     return all(cell != EMPTY for row in board for cell in row)
@@ -478,20 +462,18 @@ def ai2_turn():
         else :
              current_player =  firstPlayer
         if mode == "AIvsAI":
-            print("Hello :- ")
             root.after(100 ,  ai_turn)
-
 
 
 def check_winner(player, row, col):
     directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
     for dr, dc in directions:
         count = 1
-        for dir in [1, -1]:
+        for direction in [1, -1]:
             r, c = row, col
             while True:
-                r += dr * dir
-                c += dc * dir
+                r += dr * direction
+                c += dc * direction
                 if 0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and board[r][c] == player:
                     count += 1
                 else:
@@ -500,9 +482,9 @@ def check_winner(player, row, col):
             return True
     return False
 
-
 def is_valid_move(board, row, col):
     return 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE and board[row][col] == EMPTY
+
 def getNeighbors(grid, radius = 1):
     candidates = set()
     for i in range(N):
@@ -564,6 +546,4 @@ def alphabeta(board, depth, is_maximizing, last_x, last_y, alpha, beta):
 def ai2_move():
     
    res = alphabeta(board, MAX_DEPTH, True, last_move[0] , last_move[1], float('-inf'), float('inf'))
-   print(res)
-   print("Utility: ", CalcWinPossibility(res[1][0], res[1][1],board, AI))
    return res[1]
