@@ -440,7 +440,6 @@ def ai2_turn():
         r, c = move
         board[r][c] = current_player
         last_move = (r, c)
-        print( last_move)
         draw_stone(c * CELL_SIZE + CELL_SIZE // 2, r * CELL_SIZE + CELL_SIZE // 2,  current_player)
 
         if check_winner(current_player, r, c):
