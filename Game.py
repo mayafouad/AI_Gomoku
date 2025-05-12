@@ -3,7 +3,6 @@ from tkinter import simpledialog
 from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 import numpy as np
-import AlphaBeta
 import math
 import random
 
