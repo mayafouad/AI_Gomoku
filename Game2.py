@@ -96,7 +96,7 @@ def draw_stone(x, y, player):
         canvas.create_oval(x - 18, y - 18, x + 18, y + 18, fill=color)
 
 def click(event):
-    global firstPlayer, last_move,current_player , status_label
+    global firstPlayer, last_move,current_player , status_label, board, secondPlayer, mode
     col = event.x // CELL_SIZE
     row = event.y // CELL_SIZE
 
@@ -105,6 +105,7 @@ def click(event):
 
     board[row][col] = current_player
     last_move = (row, col)
+    print(f"Human Move: {row}, {col}")
     draw_stone(col * CELL_SIZE + CELL_SIZE // 2, row * CELL_SIZE + CELL_SIZE // 2, current_player)
 
     if check_winner(current_player, row, col):
@@ -130,7 +131,7 @@ def click(event):
 
 yet = False
 def ai_turn():
-    global current_player, last_move , mode , yet , status_label
+    global current_player, last_move , mode , yet , status_label, board, firstPlayer, secondPlayer
     if mode == "AIvsAI" and yet == False :
         yet =  True
         x = random.randint(0, BOARD_SIZE - 1)
@@ -138,6 +139,7 @@ def ai_turn():
         move = (x , y)
     else :
         move = ai_move()
+
 
         # Check if the AI move is valid or not as the board is full
     if move is None:
@@ -150,6 +152,7 @@ def ai_turn():
         r, c = move
         board[r][c] = current_player
         last_move = (r, c)
+        print(f"AI minimax Move: {r}, {c}")
         draw_stone(c * CELL_SIZE + CELL_SIZE // 2, r * CELL_SIZE + CELL_SIZE // 2, current_player)
 
         if check_winner(current_player, r, c):
@@ -177,24 +180,25 @@ def ai_turn():
 
 
 def is_board_full():
+    global board
     return all(cell != EMPTY for row in board for cell in row)
 
 def is_valid_move(board, row, col):
     return 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE and board[row][col] == EMPTY
 
-def evaluate_board(current_player):
-    weights = {1: 1, 2: 10, 3: 100, 4: 1000}  # Scores for chain lengths
-    open_bonus = {3: 500, 4: 5000}  # Bonuses for open or gapped chains
+def evaluate_board(maximizing_player):
+    weights = {1: 10, 2: 100, 3: 1000, 4: 10000}  # Increased weight for 4-stone chains
+    open_bonus = {3: 5000, 4: 25000}  # Higher bonuses for open/gapped chains
+    threat_penalty = {3: -5000, 4: -50000}  # Heavy penalties for opponent threats
     score = 0
-    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]  # Horizontal, vertical, diagonal, anti-diagonal
+    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+    window = 5  # ±5 cells around last move
 
-    if last_move != (-1, -1):
-        start_row = max(0, last_move[0] - 4)
-        end_row = min(BOARD_SIZE, last_move[0] + 5)
-        start_col = max(0, last_move[1] - 4)
-        end_col = min(BOARD_SIZE, last_move[1] + 5)
-    else:
-        start_row, end_row, start_col, end_col = 0, BOARD_SIZE, 0, BOARD_SIZE
+    r, c = last_move if last_move != (-1, -1) else (N//2, M//2)
+    start_row = max(0, r - window)
+    end_row = min(BOARD_SIZE, r + window + 1)
+    start_col = max(0, c - window)
+    end_col = min(BOARD_SIZE, c + window + 1)
 
     for r in range(start_row, end_row):
         for c in range(start_col, end_col):
@@ -202,157 +206,111 @@ def evaluate_board(current_player):
                 continue
             current = board[r][c]
             for dr, dc in directions:
-                # Prevent double-counting
+                # Skip reverse direction to avoid double-counting
                 prev_r, prev_c = r - dr, c - dc
                 if 0 <= prev_r < BOARD_SIZE and 0 <= prev_c < BOARD_SIZE and board[prev_r][prev_c] == current:
                     continue
                 chain_length = 0
                 gaps = 0
-                open_start = False
-                open_end = False
+                open_start = open_end = False
+                # Check forward direction
                 nr, nc = r, c
-                # Check for open start
                 if 0 <= r - dr < BOARD_SIZE and 0 <= c - dc < BOARD_SIZE and board[r - dr][c - dc] == EMPTY:
                     open_start = True
-                # Count stones and up to 1 gap
-                while (start_row <= nr < end_row and start_col <= nc < end_col and
-                       0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE):
+                for _ in range(5):  # Check 5 cells
+                    if not (0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE):
+                        break
                     if board[nr][nc] == current:
                         chain_length += 1
                     elif board[nr][nc] == EMPTY and gaps == 0:
                         gaps += 1
-                        chain_length += 1
                     else:
                         break
                     nr += dr
                     nc += dc
-                # Check for open end
                 if 0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE and board[nr][nc] == EMPTY:
                     open_end = True
-                # Handle winning condition (5+ stones, no gaps) ->  { * * * * * }
-                if chain_length >= 5 and gaps == 0:
-                    if current == current_player:
-                        return 100000
+                # Check backward direction
+                nr, nc = r - dr, c - dc
+                for _ in range(5):
+                    if not (0 <= nr < BOARD_SIZE and 0 <= nc < BOARD_SIZE):
+                        break
+                    if board[nr][nc] == current:
+                        chain_length += 1
+                    elif board[nr][nc] == EMPTY and gaps == 0:
+                        gaps += 1
                     else:
-                        return -100000
-                # remove the gap from the chain length -> { * * * 0 * } chain_length = 5 so we need to remove 1 from the chain length
-                if gaps == 1:
-                    chain_length -= 1
-                # Score non-winning chains
+                        break
+                    nr -= dr
+                    nc -= dc
+                # Handle winning condition
+                if chain_length >= 5:
+                    return 100000 if current == maximizing_player else -100000
+                # Score chains
                 if chain_length in weights:
                     chain_score = weights[chain_length]
-                    if chain_length in open_bonus and (open_start or open_end or gaps > 0):
-                        chain_score += open_bonus[chain_length]
-                    if current == current_player:
+                    is_open = open_start or open_end or gaps > 0
+                    if current == maximizing_player:
+                        if is_open and chain_length in open_bonus:
+                            chain_score += open_bonus[chain_length]
                         score += chain_score
                     else:
-                        score -= chain_score
+                        if chain_length in threat_penalty:
+                            chain_score += threat_penalty[chain_length] if is_open else -weights[chain_length]
+                        score += chain_score
     return score
 
-def minimax(board, depth, is_maximizing,current_player):
+def minimax(depth, is_maximizing, maximizing_player):
+    global board, firstPlayer, secondPlayer
 
     if depth == 0 or is_board_full():
-        return evaluate_board(current_player)
+        return evaluate_board(maximizing_player)
+    
+    children = getNeighbors(board)
 
-    if last_move != (-1, -1):
-        start_row = max(0, last_move[0] - 2)
-        end_row = min(BOARD_SIZE, last_move[0] + 3)
-        start_col = max(0, last_move[1] - 2)
-        end_col = min(BOARD_SIZE, last_move[1] + 3)
-    else:
-        start_row, end_row, start_col, end_col = 0, BOARD_SIZE, 0, BOARD_SIZE
     if is_maximizing:
         max_eval = -np.inf
-        for r in range(start_row, end_row):
-            for c in range(start_col, end_col):
-                if board[r][c] == EMPTY:
-                    board[r][c] = current_player
-                    eval = minimax(board, depth - 1, False,current_player)
+        for r, c in children:
+            if board[r][c] == EMPTY:
+                board[r][c] = maximizing_player
+                if check_winner(maximizing_player, r, c):
                     board[r][c] = EMPTY
-                    max_eval = max(max_eval, eval)
+                    return 100000
+                eval = minimax(depth - 1, False, maximizing_player)
+                board[r][c] = EMPTY
+                max_eval = max(max_eval, eval)
         return max_eval
     else:
         min_eval = np.inf
-        for r in range(start_row, end_row):
-            for c in range(start_col, end_col):
-                if board[r][c] == EMPTY:
-                    board[r][c] = firstPlayer if current_player == secondPlayer else secondPlayer
-                    eval = minimax(board, depth - 1, True,current_player)
+        openant_player = firstPlayer if maximizing_player == secondPlayer else secondPlayer
+        for r, c in children:
+            if board[r][c] == EMPTY:
+                board[r][c] = openant_player
+                if check_winner(openant_player, r, c):
                     board[r][c] = EMPTY
-                    min_eval = min(min_eval, eval)
+                    return -100000
+                eval = minimax(depth - 1, True,maximizing_player)
+                board[r][c] = EMPTY
+                min_eval = min(min_eval, eval)
         return min_eval
 
 def ai_move():
     best_score = -np.inf
     best_move = None
-    global last_move, current_player
-    # Define ±5 window for instant win/loss check
-    if last_move != (-1, -1):
-        win_start_row = max(0, last_move[0] - 5)
-        win_end_row = min(BOARD_SIZE, last_move[0] + 6)
-        win_start_col = max(0, last_move[1] - 5)
-        win_end_col = min(BOARD_SIZE, last_move[1] + 6)
+    global last_move, current_player, board,mode,AI1,AI    
 
-        # Check for instant win (can AI1 win with one move?)
-        for r in range(win_start_row, win_end_row):
-            for c in range(win_start_col, win_end_col):
-                if board[r][c] == EMPTY:
-                    board[r][c] = current_player
-                    if check_winner(current_player, r, c):
-                        board[r][c] = EMPTY
-                        return (r, c)  # Win found
-                    board[r][c] = EMPTY
-        # Check if opponent can win on the next move
-        for r in range(win_start_row, win_end_row):
-            for c in range(win_start_col, win_end_col):
-                if board[r][c] == EMPTY:
-                    opponent = firstPlayer if current_player == secondPlayer else secondPlayer
-                    board[r][c] = opponent
-                    if check_winner(opponent, r, c):
-                        board[r][c] = EMPTY
-                        return (r, c)  # Block the win
-                    board[r][c] = EMPTY
-
-                    # Initial search window (±2 cells around last move)
-    if last_move != (-1, -1):
-        start_row = max(0, last_move[0] - 2)
-        end_row = min(BOARD_SIZE, last_move[0] + 3)
-        start_col = max(0, last_move[1] - 2)
-        end_col = min(BOARD_SIZE, last_move[1] + 3)
-    else:
-        start_row, end_row, start_col, end_col = 0, BOARD_SIZE, 0, BOARD_SIZE
-
-    valid_moves = []
-    # Get all valid moves in the initial window
-    for r in range(start_row, end_row):
-        for c in range(start_col, end_col):
-            if board[r][c] == EMPTY:
-                valid_moves.append((r, c))
-
-    # If no valid moves in the initial window, search the entire board
-    if not valid_moves:
-        print("No valid moves in initial window, searching entire board...")
-        start_row, end_row, start_col, end_col = 0, BOARD_SIZE, 0, BOARD_SIZE
-        for r in range(start_row, end_row):
-            for c in range(start_col, end_col):
-                if board[r][c] == EMPTY:
-                    valid_moves.append((r, c))
-
+    maximizing_player = AI if mode == "HumanvsAI" else AI1
     # Evaluate each valid move
-    for r, c in valid_moves:
-        board[r][c] = current_player
-        score = minimax(board, MAX_DEPTH, False, current_player)
+    children = getNeighbors(board)
+    for r, c in children:
+        if board[r][c] != EMPTY:
+            continue 
+        board[r][c] = maximizing_player
+        score = minimax(MAX_DEPTH, False, maximizing_player)
         board[r][c] = EMPTY
         if score > best_score:
             best_score = score
             best_move = (r, c)
-
-    # If no move improved best_score, select a random move
-    if best_move is None and valid_moves:
-        print("No move improved best_score, selecting random move")
-        best_move = random.choice(valid_moves)
-        best_score = -np.inf
-
     return best_move
 
 
@@ -379,23 +337,6 @@ class CustomNameDialog(simpledialog.Dialog):
 
 def BlockedNums(grid, turn):
     blocked = 0
-    dx = [-1, 1, 0, 0, 1, -1, -1, 1]
-    dy = [0,  0, -1, 1, 1, -1, 1, -1]
-
-    for i in range(BOARD_SIZE):
-        for j in range(BOARD_SIZE):
-            for k in range(8):
-                x, y = i, j
-                curCnt = 0
-                while IsValid(x, y):
-                    if grid[x][y] == turn or grid[x][y] == 0:
-                        curCnt += 1
-                        x += dx[k]
-                        y += dy[k]
-                    else:
-                        if 1 <= curCnt < 5:
-                            blocked += curCnt * 100
-                        break
     return blocked
 
 
@@ -420,10 +361,13 @@ def CalcWinPossibility(startX, startY, grid, val):
             continue
 
         cnt = 0
+        other =AI2
+        if val == other:
+            other == AI1
         while cnt < 5:
             if  board[x][y] == val:
                 player += 1
-            elif board[x][y] == (3 - val):
+            elif board[x][y] == other:
                 opponent += 1
             cnt += 1
             y += dy[i]
@@ -505,7 +449,7 @@ def UtilityFunctionInner(curgrid, symbol):
     return ways
 
 def UtilityFunction(curgrid):
-    return UtilityFunctionInner(curgrid, secondPlayer) - UtilityFunctionInner(curgrid,  firstPlayer) + (BlockedNums(curgrid,secondPlayer))
+    return UtilityFunctionInner(curgrid, secondPlayer) - UtilityFunctionInner(curgrid,  firstPlayer)
 #####################################################################################3
 
 def ai2_turn():
@@ -515,6 +459,7 @@ def ai2_turn():
         r, c = move
         board[r][c] = current_player
         last_move = (r, c)
+        print(f"AI alpha beta Move: {r}, {c}")
         draw_stone(c * CELL_SIZE + CELL_SIZE // 2, r * CELL_SIZE + CELL_SIZE // 2,  current_player)
 
         if check_winner(current_player, r, c):
@@ -616,5 +561,5 @@ def alphabeta(board, depth, is_maximizing, last_x, last_y, alpha, beta):
 
 def ai2_move():
 
-    res = alphabeta(board, MAX_DEPTH, True, last_move[0] , last_move[1], float('-inf'), float('inf'))
+    res = alphabeta(board, MAX_DEPTH, True, -1 , -1, float('-inf'), float('inf'))
     return res[1]
